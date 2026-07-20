@@ -1,0 +1,14 @@
+{
+  "name": "CadentCable.Unity",
+  "rootNamespace": "CadentCable.Unity",
+  "references": [
+    "CadentCable.Abstractions",
+    "CadentCable.Core",
+    "CadentCable.Json.Newtonsoft",
+    "CadentCable.Transport.DotNet"
+  ],
+  "autoReferenced": true,
+  "excludePlatforms": [
+    "WebGL"
+  ]
+}

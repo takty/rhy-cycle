@@ -1,0 +1,8 @@
+{
+  "name": "CadentCable.Core",
+  "rootNamespace": "CadentCable.Core",
+  "references": [
+    "CadentCable.Abstractions"
+  ],
+  "autoReferenced": true
+}

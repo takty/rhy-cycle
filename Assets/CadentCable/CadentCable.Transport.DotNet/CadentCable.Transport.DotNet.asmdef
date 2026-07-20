@@ -1,0 +1,11 @@
+{
+  "name": "CadentCable.Transport.DotNet",
+  "rootNamespace": "CadentCable.Transport.DotNet",
+  "references": [
+    "CadentCable.Abstractions"
+  ],
+  "autoReferenced": true,
+  "excludePlatforms": [
+    "WebGL"
+  ]
+}

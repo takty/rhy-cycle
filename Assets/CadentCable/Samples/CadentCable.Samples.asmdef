@@ -1,0 +1,12 @@
+{
+  "name": "CadentCable.Samples",
+  "rootNamespace": "CadentCable.Samples",
+  "references": [
+    "CadentCable.Core",
+    "CadentCable.Unity"
+  ],
+  "autoReferenced": true,
+  "excludePlatforms": [
+    "WebGL"
+  ]
+}

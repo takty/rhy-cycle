@@ -1,0 +1,38 @@
+# Unity generated files
+/[Ll]ibrary/
+/[Tt]emp/
+/[Oo]bj/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+# Build outputs
+/[Bb]uild/
+/[Bb]uilds/
+
+# Memory captures and recordings
+/[Mm]emoryCaptures/
+/[Rr]ecordings/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.csproj
+*.sln
+*.slnx
+*.user
+*.userprefs
+*.pidb
+*.pdb
+*.mdb
+*.opendb
+*.VC.db
+*.DotSettings.user
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Crash logs
+sysinfo.txt
+mono_crash.*
+*.log

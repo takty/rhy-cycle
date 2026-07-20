@@ -1,0 +1,9 @@
+{
+  "name": "CadentCable.Json.Newtonsoft",
+  "rootNamespace": "CadentCable.Json.Newtonsoft",
+  "references": [
+    "CadentCable.Abstractions",
+    "Unity.Newtonsoft.Json"
+  ],
+  "autoReferenced": true
+}
