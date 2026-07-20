@@ -68,6 +68,7 @@ public sealed class PlayerStack : MonoBehaviour
             displayName,
             CreatePlayerColor(memberId)
         );
+        ball.BeginProtection();
 
         ball.HitObstacle += OnBallHitObstacle;
 
@@ -160,7 +161,7 @@ public sealed class PlayerStack : MonoBehaviour
 
         IsGrounded = false;
     }
-    
+
     private void Awake()
     {
         startPosition = transform.position;

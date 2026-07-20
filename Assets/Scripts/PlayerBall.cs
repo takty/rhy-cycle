@@ -8,6 +8,19 @@ public sealed class PlayerBall : MonoBehaviour
     private SpriteRenderer spriteRenderer;
 
     [SerializeField]
+    [Min(0.0f)]
+    private float protectionDuration = 1.0f;
+
+    [SerializeField]
+    [Range(0.0f, 1.0f)]
+    private float protectedAlpha = 0.45f;
+
+    private Collider2D[] ballColliders;
+    private LayerMask[] normalExcludeLayers;
+    private Coroutine protectionCoroutine;
+    private Color normalColor = Color.white;
+
+    [SerializeField]
     private float eliminationDuration = 0.3f;
 
     [SerializeField]
@@ -28,7 +41,24 @@ public sealed class PlayerBall : MonoBehaviour
     {
         if (spriteRenderer == null)
         {
-            spriteRenderer = GetComponent<SpriteRenderer>();
+            spriteRenderer =
+                GetComponent<SpriteRenderer>();
+        }
+
+        ballColliders =
+            GetComponentsInChildren<Collider2D>(
+                true
+            );
+
+        normalExcludeLayers =
+            new LayerMask[ballColliders.Length];
+
+        for (int i = 0;
+            i < ballColliders.Length;
+            i++)
+        {
+            normalExcludeLayers[i] =
+                ballColliders[i].excludeLayers;
         }
     }
 
@@ -43,9 +73,130 @@ public sealed class PlayerBall : MonoBehaviour
         gameObject.name =
             $"PlayerBall_{displayName}";
 
+        normalColor = color;
+
         if (spriteRenderer != null)
         {
-            spriteRenderer.color = color;
+            spriteRenderer.color =
+                normalColor;
+        }
+   }
+
+    public void BeginProtection()
+    {
+        if (protectionDuration <= 0.0f)
+        {
+            return;
+        }
+
+        int obstacleLayer =
+            LayerMask.NameToLayer(
+                "Obstacle"
+            );
+
+        if (obstacleLayer < 0)
+        {
+            Debug.LogError(
+                "The Obstacle layer does not exist."
+            );
+
+            return;
+        }
+
+        if (protectionCoroutine != null)
+        {
+            StopCoroutine(
+                protectionCoroutine
+            );
+
+            RestoreProtection();
+        }
+
+        int obstacleMask =
+            1 << obstacleLayer;
+
+        protectionCoroutine =
+            StartCoroutine(
+                PlayProtection(
+                    obstacleMask
+                )
+            );
+    }
+
+    private IEnumerator PlayProtection(
+        int obstacleMask)
+    {
+        for (int i = 0;
+            i < ballColliders.Length;
+            i++)
+        {
+            Collider2D ballCollider =
+                ballColliders[i];
+
+            if (ballCollider == null)
+            {
+                continue;
+            }
+
+            int excludedLayers =
+                ballCollider
+                    .excludeLayers
+                    .value;
+
+            ballCollider.excludeLayers =
+                excludedLayers |
+                obstacleMask;
+        }
+
+        if (spriteRenderer != null)
+        {
+            Color protectedColor =
+                normalColor;
+
+            protectedColor.a =
+                normalColor.a *
+                protectedAlpha;
+
+            spriteRenderer.color =
+                protectedColor;
+        }
+
+        yield return new WaitForSeconds(
+            protectionDuration
+        );
+
+        RestoreProtection();
+
+        protectionCoroutine = null;
+    }
+
+    private void RestoreProtection()
+    {
+        if (ballColliders != null &&
+            normalExcludeLayers != null)
+        {
+            int count = Mathf.Min(
+                ballColliders.Length,
+                normalExcludeLayers.Length
+            );
+
+            for (int i = 0;
+                i < count;
+                i++)
+            {
+                if (ballColliders[i] != null)
+                {
+                    ballColliders[i]
+                        .excludeLayers =
+                        normalExcludeLayers[i];
+                }
+            }
+        }
+
+        if (spriteRenderer != null)
+        {
+            spriteRenderer.color =
+                normalColor;
         }
     }
 
@@ -76,6 +227,17 @@ public sealed class PlayerBall : MonoBehaviour
         if (isEliminating)
         {
             return;
+        }
+
+        if (protectionCoroutine != null)
+        {
+            StopCoroutine(
+                protectionCoroutine
+            );
+
+            protectionCoroutine = null;
+
+            RestoreProtection();
         }
 
         isEliminating = true;
