@@ -4,9 +4,9 @@ using UnityEngine.InputSystem;
 public class PlayerController : MonoBehaviour
 {
     [SerializeField]
-    private RemoteJumpInput remoteInput;
+    //private RemoteJumpInput remoteInput;
     
-    [SerializeField]
+    //[SerializeField]
     private float jumpSpeed = 8.0f;
 
     private Rigidbody2D body;
@@ -23,11 +23,11 @@ public class PlayerController : MonoBehaviour
             Keyboard.current != null &&
             Keyboard.current.spaceKey.wasPressedThisFrame;
 
-        bool remoteJump =
-            remoteInput != null &&
-            remoteInput.ConsumeJumpPressed();
+        //bool remoteJump =
+        //    remoteInput != null &&
+        //    remoteInput.ConsumeJumpPressed();
 
-        if (isGrounded && (keyboardJump || remoteJump))
+        if (isGrounded && (keyboardJump))
         {
             body.linearVelocity = new Vector2(
                 body.linearVelocity.x,

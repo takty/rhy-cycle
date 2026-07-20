@@ -26,7 +26,6 @@ public static class QrCodeGenerator
         {
             for (int x = 0; x < size; x++)
             {
-                // Texture2Dは下から上へ格納されるため、Y方向を反転する。
                 int index = (size - 1 - y) * size + x;
 
                 pixels[index] = matrix[x, y]
