@@ -1,3 +1,4 @@
+using System;
 using UnityEngine;
 
 public sealed class PlayerBall : MonoBehaviour
@@ -7,6 +8,8 @@ public sealed class PlayerBall : MonoBehaviour
 
     public string MemberId { get; private set; }
     public string DisplayName { get; private set; }
+
+    public event Action<PlayerBall> HitObstacle;
 
     private void Awake()
     {
@@ -32,4 +35,22 @@ public sealed class PlayerBall : MonoBehaviour
             spriteRenderer.color = color;
         }
     }
+
+    private void OnCollisionEnter2D(
+        Collision2D collision)
+    {
+        bool hitObstacle =
+            collision.collider
+                .GetComponent<CourseObstacle>() != null ||
+            collision.otherCollider
+                .GetComponent<CourseObstacle>() != null;
+
+        if (!hitObstacle)
+        {
+            return;
+        }
+
+        HitObstacle?.Invoke(this);
+    }
+
 }

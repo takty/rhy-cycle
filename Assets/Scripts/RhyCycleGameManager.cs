@@ -1,7 +1,8 @@
-using System.Collections.Generic;
 using CadentCable.Core;
-using UnityEngine;
 using System.Collections;
+using System.Collections.Generic;
+using UnityEngine;
+using UnityEngine.Playables;
 
 public sealed class RhyCycleGameManager : MonoBehaviour
 {
@@ -9,6 +10,16 @@ public sealed class RhyCycleGameManager : MonoBehaviour
     private CourseController course;
     [SerializeField]
     private PlayerStack playerStack;
+
+    [SerializeField]
+    private GameAudio gameAudio;
+
+    [SerializeField]
+    private CoursePulse coursePulse;
+
+    [SerializeField]
+    private GameScore gameScore;
+
     [SerializeField]
     private float jumpInputWindow = 0.15f;
 
@@ -44,6 +55,7 @@ public sealed class RhyCycleGameManager : MonoBehaviour
     private readonly Dictionary<string, PlayerEntry> players = new();
 
     private bool isGameRunning;
+    private bool restartAtNextMeasure;
 
     private void OnEnable()
     {
@@ -60,6 +72,12 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         if (course != null)
         {
             course.MeasureStarted += OnMeasureStarted;
+        }
+
+        if (playerStack != null)
+        {
+            playerStack.PlayerHitObstacle +=
+                OnPlayerHitObstacle;
         }
     }
 
@@ -78,6 +96,12 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         if (course != null)
         {
             course.MeasureStarted -= OnMeasureStarted;
+        }
+
+        if (playerStack != null)
+        {
+            playerStack.PlayerHitObstacle -=
+                OnPlayerHitObstacle;
         }
     }
 
@@ -105,7 +129,9 @@ public sealed class RhyCycleGameManager : MonoBehaviour
             return;
         }
 
-        bool joinImmediately = !isGameRunning;
+        bool joinImmediately =
+            !isGameRunning &&
+            !restartAtNextMeasure;
 
         PlayerEntry player = new PlayerEntry
         {
@@ -144,7 +170,30 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         playerStack.RemovePlayer(memberId);
         remoteInput.RemovePlayer(memberId);
 
+        if (isGameRunning &&
+            gameScore != null)
+        {
+            gameScore.SetAliveCount(
+                CountAlivePlayers()
+            );
+        }
+
         Debug.Log($"Player left: {memberId}");
+
+        CheckForGameEnd();
+
+        if (!isGameRunning &&
+            restartAtNextMeasure &&
+            CountWaitingPlayers() == 0)
+        {
+            restartAtNextMeasure = false;
+            course.StopCourse();
+
+            Debug.Log(
+                "No waiting players remain. " +
+                "Course stopped."
+            );
+        }
     }
 
     private void OnAPressed(string memberId)
@@ -163,18 +212,63 @@ public sealed class RhyCycleGameManager : MonoBehaviour
                 break;
 
             case PlayerState.Eliminated:
-                Debug.Log($"Reentry requested: {memberId}");
+                RequestReentry(player);
                 break;
 
             case PlayerState.Waiting:
-                Debug.Log($"Waiting player pressed A: {memberId}");
+                Debug.Log(
+                    $"Player is already waiting to enter: " +
+                    $"{player.DisplayName} ({memberId})"
+                );
                 break;
         }
+    }
+
+    private void RequestReentry(
+    PlayerEntry player)
+    {
+        if (isGameRunning ||
+            restartAtNextMeasure)
+        {
+            player.State = PlayerState.Waiting;
+
+            Debug.Log(
+                $"Reentry requested: " +
+                $"{player.DisplayName} " +
+                $"({player.MemberId})"
+            );
+
+            return;
+        }
+
+        player.State = PlayerState.Alive;
+
+        playerStack.AddPlayer(
+        player.MemberId,
+        player.DisplayName
+            );
+
+        StartGame();
+
+        Debug.Log(
+            $"Player reentered and started a new game: " +
+            $"{player.DisplayName} " +
+            $"({player.MemberId})"
+        );
     }
 
     private void StartGame()
     {
         isGameRunning = true;
+        restartAtNextMeasure = false;
+
+        if (gameScore != null)
+        {
+            gameScore.StartGame(
+            CountAlivePlayers()
+            );
+        }
+ 
         course.StartCourse();
 
         Debug.Log("Game started.");
@@ -182,23 +276,51 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
     private void OnMeasureStarted(int measure)
     {
-        foreach (PlayerEntry player in players.Values)
+        if (gameAudio != null)
         {
-            if (player.State != PlayerState.Waiting)
+            gameAudio.PlayMeasure();
+        }
+
+        if (coursePulse != null)
+        {
+            coursePulse.Play();
+        }
+
+        if (!isGameRunning &&
+            !restartAtNextMeasure)
+        {
+            return;
+        }
+
+        int enteredCount =
+            ActivateWaitingPlayers();
+
+        if (!isGameRunning &&
+            restartAtNextMeasure &&
+            enteredCount > 0)
+        {
+            isGameRunning = true;
+            restartAtNextMeasure = false;
+
+            if (gameScore != null)
             {
-                continue;
+                gameScore.StartGame(
+                    CountAlivePlayers()
+                );
             }
-
-            player.State = PlayerState.Alive;
-
-            playerStack.AddPlayer(
-                player.MemberId,
-                player.DisplayName
+            Debug.Log(
+                $"Next game started at measure " +
+                $"{measure + 1}."
             );
 
-            Debug.Log(
-                $"Player entered at measure start: " +
-                $"{player.MemberId}"
+            return;
+        }
+        if (isGameRunning &&
+            enteredCount > 0 &&
+            gameScore != null)
+        {
+            gameScore.SetAliveCount(
+                CountAlivePlayers()
             );
         }
     }
@@ -241,6 +363,18 @@ public sealed class RhyCycleGameManager : MonoBehaviour
             if (synchronization >= minimumSynchronization)
             {
                 playerStack.TryJump(synchronization);
+                bool jumped =
+                playerStack.TryJump(
+                synchronization
+                                );
+
+                if (jumped &&
+    gameAudio != null)
+                {
+                    gameAudio.PlayJump(
+                    synchronization
+                                    );
+                }
             }
         }
 
@@ -255,6 +389,145 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         foreach (PlayerEntry player in players.Values)
         {
             if (player.State == PlayerState.Alive)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private void OnPlayerHitObstacle(
+        string memberId)
+    {
+        if (!players.TryGetValue(
+            memberId,
+            out PlayerEntry player))
+        {
+            return;
+        }
+
+        if (player.State != PlayerState.Alive)
+        {
+            return;
+        }
+
+        EliminatePlayer(player);
+    }
+
+    private void EliminatePlayer(
+        PlayerEntry player)
+    {
+        player.State = PlayerState.Eliminated;
+
+        jumpInputs.Remove(player.MemberId);
+
+        playerStack.RemovePlayer(player.MemberId);
+
+        if (gameScore != null)
+        {
+            gameScore.SetAliveCount(
+                CountAlivePlayers()
+            );
+        }
+        Debug.Log(
+            $"Player eliminated: " +
+            $"{player.DisplayName} ({player.MemberId}), " +
+            $"alive={CountAlivePlayers()}"
+        );
+
+        CheckForGameEnd();
+    }
+
+    private int ActivateWaitingPlayers()
+    {
+        int enteredCount = 0;
+
+        foreach (PlayerEntry player in players.Values)
+        {
+            if (player.State != PlayerState.Waiting)
+            {
+                continue;
+            }
+
+            player.State = PlayerState.Alive;
+
+            playerStack.AddPlayer(
+                player.MemberId,
+                player.DisplayName
+            );
+
+            enteredCount++;
+
+            Debug.Log(
+                $"Player entered at measure start: " +
+                $"{player.MemberId}"
+            );
+        }
+
+        return enteredCount;
+    }
+
+    private void CheckForGameEnd()
+    {
+        if (!isGameRunning)
+        {
+            return;
+        }
+
+        if (CountAlivePlayers() > 0)
+        {
+            return;
+        }
+
+        int finalScore = 0;
+        int maxAliveCount = 0;
+        
+        if (gameScore != null)
+        {
+            gameScore.EndGame();
+            finalScore = gameScore.CurrentScore;
+            maxAliveCount = gameScore.MaxAliveCount;
+        }
+
+        isGameRunning = false;
+
+        if (jumpInputCoroutine != null)
+        {
+            StopCoroutine(jumpInputCoroutine);
+            jumpInputCoroutine = null;
+        }
+
+        jumpInputs.Clear();
+
+        int waitingCount =
+            CountWaitingPlayers();
+
+        restartAtNextMeasure =
+            waitingCount > 0;
+
+        if (!restartAtNextMeasure)
+        {
+            course.StopCourse();
+        }
+
+        Debug.Log(
+            $"Game ended. " +
+            $"score={finalScore}, " +
+            $"maxAlive={maxAliveCount}, " +
+            $"waiting={waitingCount}, " +
+            $"restartAtNextMeasure=" +
+            $"{restartAtNextMeasure}"
+        );
+    }
+
+    private int CountWaitingPlayers()
+    {
+        int count = 0;
+
+        foreach (PlayerEntry player in players.Values)
+        {
+            if (player.State == PlayerState.Waiting)
             {
                 count++;
             }

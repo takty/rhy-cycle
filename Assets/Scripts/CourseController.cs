@@ -1,6 +1,7 @@
 using System;
 using UnityEngine;
 
+[RequireComponent(typeof(Rigidbody2D))]
 public sealed class CourseController : MonoBehaviour
 {
     [SerializeField]
@@ -17,6 +18,9 @@ public sealed class CourseController : MonoBehaviour
     private bool isRunning;
     private double startTime;
     private int currentMeasure = -1;
+
+    private Rigidbody2D body;
+    private float targetAngle;
 
     private double MeasureDuration =>
         60.0 / bpm * beatsPerMeasure;
@@ -43,8 +47,7 @@ public sealed class CourseController : MonoBehaviour
             angle = -angle;
         }
 
-        transform.localRotation =
-            Quaternion.Euler(0.0f, 0.0f, angle);
+        targetAngle = angle;
 
         while (currentMeasure < measure)
         {
@@ -68,4 +71,24 @@ public sealed class CourseController : MonoBehaviour
     {
         isRunning = false;
     }
+
+    private void Awake()
+    {
+        body = GetComponent<Rigidbody2D>();
+
+        body.bodyType = RigidbodyType2D.Kinematic;
+        body.gravityScale = 0.0f;
+        body.interpolation = RigidbodyInterpolation2D.Interpolate;
+    }
+
+    private void FixedUpdate()
+    {
+        if (!isRunning)
+        {
+            return;
+        }
+
+        body.MoveRotation(targetAngle);
+    }
+
 }

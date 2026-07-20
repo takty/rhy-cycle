@@ -1,3 +1,4 @@
+using System;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -15,13 +16,13 @@ public sealed class PlayerStack : MonoBehaviour
     private float ballSpacing = 0.58f;
 
     [SerializeField]
-    private float gravityScale = 4.0f;
+    private float gravityScale = 7.0f;
 
     [SerializeField]
-    private float minimumJumpSpeed = 7.5f;
+    private float minimumJumpSpeed = 16.0f;
 
     [SerializeField]
-    private float maximumJumpSpeed = 10.5f;
+    private float maximumJumpSpeed = 20.0f;
 
     private Rigidbody2D body;
     private Vector3 startPosition;
@@ -36,6 +37,8 @@ public sealed class PlayerStack : MonoBehaviour
         new List<string>();
 
     public int Count => order.Count;
+
+    public event Action<string> PlayerHitObstacle;
 
     public void AddPlayer(
         string memberId,
@@ -66,6 +69,8 @@ public sealed class PlayerStack : MonoBehaviour
             CreatePlayerColor(memberId)
         );
 
+        ball.HitObstacle += OnBallHitObstacle;
+
         balls.Add(memberId, ball);
         order.Add(memberId);
 
@@ -86,6 +91,7 @@ public sealed class PlayerStack : MonoBehaviour
 
         if (ball != null)
         {
+            ball.HitObstacle -= OnBallHitObstacle;
             Destroy(ball.gameObject);
         }
 
@@ -112,6 +118,9 @@ public sealed class PlayerStack : MonoBehaviour
         body.constraints =
             RigidbodyConstraints2D.FreezePositionX |
             RigidbodyConstraints2D.FreezeRotation;
+        
+        body.collisionDetectionMode =
+            CollisionDetectionMode2D.Continuous;
 
         body.simulated = false;
     }
@@ -217,5 +226,17 @@ public sealed class PlayerStack : MonoBehaviour
             0.65f,
             1.0f
         );
+    }
+
+    private void OnBallHitObstacle(
+    PlayerBall ball)
+    {
+        if (ball == null ||
+            !balls.ContainsKey(ball.MemberId))
+        {
+            return;
+        }
+
+        PlayerHitObstacle?.Invoke(ball.MemberId);
     }
 }
