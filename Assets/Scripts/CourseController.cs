@@ -14,16 +14,21 @@ public sealed class CourseController : MonoBehaviour
     private bool clockwise = true;
 
     public event Action<int> MeasureStarted;
+    public event Action<int, int> BeatStarted;
 
     private bool isRunning;
     private double startTime;
     private int currentMeasure = -1;
+    private int currentBeat = -1;
 
     private Rigidbody2D body;
     private float targetAngle;
 
+    private double BeatDuration =>
+        60.0 / bpm;
+
     private double MeasureDuration =>
-        60.0 / bpm * beatsPerMeasure;
+        BeatDuration * beatsPerMeasure;
 
     private void Update()
     {
@@ -32,9 +37,19 @@ public sealed class CourseController : MonoBehaviour
             return;
         }
 
-        double elapsed = AudioSettings.dspTime - startTime;
+        double elapsed =
+            AudioSettings.dspTime - startTime;
+
+        int beat =
+            (int)Math.Floor(
+                elapsed / BeatDuration
+            );
+
         int measure =
-            (int)Math.Floor(elapsed / MeasureDuration);
+            beat / beatsPerMeasure;
+
+        int beatInMeasure =
+            beat % beatsPerMeasure;
 
         double positionInMeasure =
             (elapsed % MeasureDuration) / MeasureDuration;
@@ -58,12 +73,32 @@ public sealed class CourseController : MonoBehaviour
                 $"Measure started: {currentMeasure + 1}"
             );
         }
+
+        if (currentBeat != beat)
+        {
+            currentBeat = beat;
+
+            BeatStarted?.Invoke(
+                measure,
+                beatInMeasure
+            );
+
+            Debug.Log(
+                $"Beat started: " +
+                $"measure={measure + 1}, " +
+                $"beat={beatInMeasure + 1}"
+            );
+        }
     }
 
     public void StartCourse()
     {
-        startTime = AudioSettings.dspTime;
+        startTime =
+            AudioSettings.dspTime;
+
         currentMeasure = -1;
+        currentBeat = -1;
+
         isRunning = true;
     }
 

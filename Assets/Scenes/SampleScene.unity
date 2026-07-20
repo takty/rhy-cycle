@@ -1067,7 +1067,7 @@ LineRenderer:
   m_RenderingLayerMask: 1
   m_RendererPriority: 0
   m_Materials:
-  - {fileID: 0}
+  - {fileID: 2100000, guid: 32f1939c93fa6944da69d48aaa755863, type: 2}
   m_StaticBatchInfo:
     firstSubMesh: 0
     subMeshCount: 0
@@ -1302,7 +1302,7 @@ MonoBehaviour:
   donutCourse: {fileID: 512659668}
   obstaclePrefab: {fileID: 8067541695002860450, guid: 68bf4e39f66d7c247a8f5036a56fe944, type: 3}
   obstacleLength: 1.2
-  obstacleWidth: 0.35
+  obstacleWidth: 0.175
   phaseOffset: 45
 --- !u!50 &512659672
 Rigidbody2D:

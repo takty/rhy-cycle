@@ -107,7 +107,11 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
         if (course != null)
         {
-            course.MeasureStarted += OnMeasureStarted;
+            course.MeasureStarted +=
+                OnMeasureStarted;
+
+            course.BeatStarted +=
+                OnBeatStarted;
         }
 
         if (playerStack != null)
@@ -131,7 +135,11 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
         if (course != null)
         {
-            course.MeasureStarted -= OnMeasureStarted;
+            course.MeasureStarted -=
+                OnMeasureStarted;
+
+            course.BeatStarted -=
+                OnBeatStarted;
         }
 
         if (playerStack != null)
@@ -316,11 +324,6 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
     private void OnMeasureStarted(int measure)
     {
-        if (gameAudio != null)
-        {
-            gameAudio.PlayMeasure();
-        }
-
         if (coursePulse != null)
         {
             coursePulse.Play();
@@ -624,5 +627,15 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         }
 
         return count;
+    }
+
+    private void OnBeatStarted(
+        int measure,
+        int beatInMeasure)
+    {
+        if (gameAudio != null)
+        {
+            gameAudio.PlayMeasure();
+        }
     }
 }

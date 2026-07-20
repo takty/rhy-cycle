@@ -17,7 +17,7 @@ public sealed class CourseObstacleLayout : MonoBehaviour
     private float obstacleLength = 1.2f;
 
     [SerializeField]
-    private float obstacleWidth = 0.35f;
+    private float obstacleWidth = 0.175f;
 
     [SerializeField]
     private float phaseOffset = 45.0f;
@@ -26,15 +26,15 @@ public sealed class CourseObstacleLayout : MonoBehaviour
 
     private readonly float[][] patterns =
     {
-        // new float[]
-        // {
-        //     0.0f, 90.0f, 180.0f, 270.0f,
-        // },
+        new float[]
+        {
+            0.0f, 90.0f, 180.0f, 270.0f,
+        },
 
-        // new float[]
-        // {
-        //    0.0f, 120.0f, 240.0f,
-        // },
+        new float[]
+        {
+           0.0f, 120.0f, 240.0f,
+        },
 
         new float[]
         {
