@@ -21,7 +21,13 @@ public sealed class RhyCycleGameManager : MonoBehaviour
     private GameScore gameScore;
 
     [SerializeField]
+    private GameHighScores gameHighScores;
+
+    [SerializeField]
     private float jumpInputWindow = 0.15f;
+
+    [SerializeField]
+    private GameHud gameHud;
 
     [SerializeField]
     [Range(0.0f, 1.0f)]
@@ -56,6 +62,15 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
     private bool isGameRunning;
     private bool restartAtNextMeasure;
+
+    public bool IsGameRunning =>
+        isGameRunning;
+
+    public int AlivePlayerCount =>
+        CountAlivePlayers();
+
+    public int WaitingPlayerCount =>
+        CountWaitingPlayers();
 
     private void OnEnable()
     {
@@ -490,6 +505,23 @@ public sealed class RhyCycleGameManager : MonoBehaviour
             maxAliveCount = gameScore.MaxAliveCount;
         }
 
+        bool enteredHighScores = false;
+
+        if (gameHighScores != null &&
+            maxAliveCount > 0)
+        {
+            enteredHighScores =
+                gameHighScores.AddScore(
+                    finalScore,
+                    maxAliveCount
+                );
+        }
+
+        if (gameHud != null)
+        {
+            gameHud.UpdateHighScores();
+        }
+
         isGameRunning = false;
 
         if (jumpInputCoroutine != null)
@@ -515,6 +547,7 @@ public sealed class RhyCycleGameManager : MonoBehaviour
             $"Game ended. " +
             $"score={finalScore}, " +
             $"maxAlive={maxAliveCount}, " +
+            $"highScore={enteredHighScores}, " +
             $"waiting={waitingCount}, " +
             $"restartAtNextMeasure=" +
             $"{restartAtNextMeasure}"
