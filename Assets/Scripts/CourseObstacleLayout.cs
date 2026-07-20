@@ -26,10 +26,15 @@ public sealed class CourseObstacleLayout : MonoBehaviour
 
     private readonly float[][] patterns =
     {
-        //new float[]
-        //{
-        //    0.0f, 90.0f, 180.0f, 270.0f,
-        //},
+        // new float[]
+        // {
+        //     0.0f, 90.0f, 180.0f, 270.0f,
+        // },
+
+        // new float[]
+        // {
+        //    0.0f, 120.0f, 240.0f,
+        // },
 
         new float[]
         {
@@ -40,11 +45,6 @@ public sealed class CourseObstacleLayout : MonoBehaviour
         //{
         //    0.0f, 45.0f, 90.0f, 135.0f,
         //    180.0f, 225.0f, 270.0f, 315.0f,
-        //},
-
-        //new float[]
-        //{
-        //    0.0f, 135.0f, 180.0f, 315.0f,
         //},
     };
 

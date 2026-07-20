@@ -23,21 +23,43 @@ public sealed class GameHud : MonoBehaviour
     [SerializeField]
     private TMP_Text highScoresText;
 
+    [SerializeField]
+    private TMP_Text statusText;
+
+    [SerializeField]
+    private float startMessageDuration = 1.0f;
+
+    private bool previousGameRunning;
+    private float startMessageEndTime;
+
     private int previousScore = -1;
     private int previousAliveCount = -1;
     private int previousWaitingCount = -1;
 
     private void Start()
     {
+        previousGameRunning =
+            gameManager != null &&
+            gameManager.IsGameRunning;
+
+        if (previousGameRunning)
+        {
+            startMessageEndTime =
+                Time.unscaledTime +
+                startMessageDuration;
+        }
+
         UpdateHighScores();
         UpdatePlayerCounts();
         UpdateCurrentScore();
+        UpdateStatus();
     }
 
     private void Update()
     {
         UpdateCurrentScore();
         UpdatePlayerCounts();
+        UpdateStatus();
     }
 
     public void UpdateHighScores()
@@ -142,5 +164,117 @@ public sealed class GameHud : MonoBehaviour
             playerCountText.text =
                 $"ALIVE  {aliveCount}";
         }
+    }
+
+    private void UpdateStatus()
+    {
+        if (statusText == null ||
+            gameManager == null)
+        {
+            return;
+        }
+
+        bool isGameRunning =
+            gameManager.IsGameRunning;
+
+        if (isGameRunning &&
+            !previousGameRunning)
+        {
+            startMessageEndTime =
+                Time.unscaledTime +
+                startMessageDuration;
+        }
+
+        previousGameRunning =
+            isGameRunning;
+
+        if (isGameRunning &&
+            Time.unscaledTime <
+            startMessageEndTime)
+        {
+            statusText.text = "START!";
+            return;
+        }
+
+        int connectedCount =
+            gameManager.ConnectedPlayerCount;
+
+        int waitingCount =
+            gameManager.WaitingPlayerCount;
+
+        int eliminatedCount =
+            gameManager.EliminatedPlayerCount;
+
+        if (connectedCount == 0)
+        {
+            statusText.text =
+                "SCAN THE QR CODE TO JOIN";
+            return;
+        }
+
+        if (isGameRunning)
+        {
+            StringBuilder builder =
+                new StringBuilder("PLAYING");
+
+            if (waitingCount > 0)
+            {
+                builder.AppendLine();
+                builder.Append(
+                    waitingCount == 1
+                        ? "1 PLAYER JOINS NEXT MEASURE"
+                        : $"{waitingCount} PLAYERS JOIN NEXT MEASURE"
+                );
+            }
+
+            if (eliminatedCount > 0)
+            {
+                builder.AppendLine();
+                builder.Append(
+                    "PRESS A TO REJOIN"
+                );
+            }
+
+            statusText.text =
+                builder.ToString();
+
+            return;
+        }
+
+        if (gameManager.IsRestartPending)
+        {
+            statusText.text =
+                "GAME OVER\n" +
+                "NEW GAME STARTS NEXT MEASURE";
+
+            return;
+        }
+
+        StringBuilder gameOverBuilder =
+            new StringBuilder();
+
+        gameOverBuilder.AppendLine(
+            "GAME OVER"
+        );
+
+        gameOverBuilder.AppendLine(
+            $"SCORE  " +
+            $"{gameManager.LastFinalScore:N0}"
+        );
+
+        if (gameManager
+            .LastGameEnteredHighScores)
+        {
+            gameOverBuilder.AppendLine(
+                "NEW HIGH SCORE!"
+            );
+        }
+
+        gameOverBuilder.Append(
+            "PRESS A TO REJOIN"
+        );
+
+        statusText.text =
+            gameOverBuilder.ToString();
     }
 }

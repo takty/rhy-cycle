@@ -62,15 +62,36 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
     private bool isGameRunning;
     private bool restartAtNextMeasure;
+    private int lastFinalScore;
+    private int lastMaxAliveCount;
+    private bool lastGameEnteredHighScores;
 
     public bool IsGameRunning =>
         isGameRunning;
+
+    public bool IsRestartPending =>
+        restartAtNextMeasure;
+
+    public int ConnectedPlayerCount =>
+        players.Count;
 
     public int AlivePlayerCount =>
         CountAlivePlayers();
 
     public int WaitingPlayerCount =>
         CountWaitingPlayers();
+
+    public int EliminatedPlayerCount =>
+        CountEliminatedPlayers();
+
+    public int LastFinalScore =>
+        lastFinalScore;
+
+    public int LastMaxAliveCount =>
+        lastMaxAliveCount;
+
+    public bool LastGameEnteredHighScores =>
+        lastGameEnteredHighScores;
 
     private void OnEnable()
     {
@@ -277,13 +298,17 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         isGameRunning = true;
         restartAtNextMeasure = false;
 
+        lastFinalScore = 0;
+        lastMaxAliveCount = 0;
+        lastGameEnteredHighScores = false;
+
         if (gameScore != null)
         {
             gameScore.StartGame(
-            CountAlivePlayers()
+                CountAlivePlayers()
             );
         }
- 
+
         course.StartCourse();
 
         Debug.Log("Game started.");
@@ -377,18 +402,17 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
             if (synchronization >= minimumSynchronization)
             {
-                playerStack.TryJump(synchronization);
                 bool jumped =
-                playerStack.TryJump(
-                synchronization
-                                );
+                    playerStack.TryJump(
+                        synchronization
+                    );
 
                 if (jumped &&
-    gameAudio != null)
+                    gameAudio != null)
                 {
                     gameAudio.PlayJump(
-                    synchronization
-                                    );
+                        synchronization
+                    );
                 }
             }
         }
@@ -433,11 +457,21 @@ public sealed class RhyCycleGameManager : MonoBehaviour
     private void EliminatePlayer(
         PlayerEntry player)
     {
-        player.State = PlayerState.Eliminated;
+        player.State =
+            PlayerState.Eliminated;
 
-        jumpInputs.Remove(player.MemberId);
+        jumpInputs.Remove(
+            player.MemberId
+        );
 
-        playerStack.RemovePlayer(player.MemberId);
+        playerStack.EliminatePlayer(
+            player.MemberId
+        );
+
+        if (gameAudio != null)
+        {
+            gameAudio.PlayElimination();
+        }
 
         if (gameScore != null)
         {
@@ -445,9 +479,11 @@ public sealed class RhyCycleGameManager : MonoBehaviour
                 CountAlivePlayers()
             );
         }
+
         Debug.Log(
             $"Player eliminated: " +
-            $"{player.DisplayName} ({player.MemberId}), " +
+            $"{player.DisplayName} " +
+            $"({player.MemberId}), " +
             $"alive={CountAlivePlayers()}"
         );
 
@@ -497,7 +533,7 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
         int finalScore = 0;
         int maxAliveCount = 0;
-        
+
         if (gameScore != null)
         {
             gameScore.EndGame();
@@ -516,6 +552,11 @@ public sealed class RhyCycleGameManager : MonoBehaviour
                     maxAliveCount
                 );
         }
+
+        lastFinalScore = finalScore;
+        lastMaxAliveCount = maxAliveCount;
+        lastGameEnteredHighScores =
+            enteredHighScores;
 
         if (gameHud != null)
         {
@@ -561,6 +602,22 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         foreach (PlayerEntry player in players.Values)
         {
             if (player.State == PlayerState.Waiting)
+            {
+                count++;
+            }
+        }
+
+        return count;
+    }
+
+    private int CountEliminatedPlayers()
+    {
+        int count = 0;
+
+        foreach (PlayerEntry player in players.Values)
+        {
+            if (player.State ==
+                PlayerState.Eliminated)
             {
                 count++;
             }

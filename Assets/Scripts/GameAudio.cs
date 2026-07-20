@@ -7,6 +7,13 @@ public sealed class GameAudio : MonoBehaviour
 {
     [SerializeField]
     [Range(0.0f, 1.0f)]
+    private float eliminationVolume = 0.5f;
+
+    [SerializeField]
+    private float eliminationDuration = 0.12f;
+    
+    [SerializeField]
+    [Range(0.0f, 1.0f)]
     private float jumpVolume = 0.35f;
 
     [SerializeField]
@@ -27,22 +34,38 @@ public sealed class GameAudio : MonoBehaviour
     private AudioClip jumpClip;
     private AudioClip measureClip;
 
+    private AudioSource eliminationSource;
+    private AudioClip eliminationClip;
+
     private void Awake()
     {
         AudioSource[] sources =
-        GetComponents<AudioSource>();
+            GetComponents<AudioSource>();
 
         jumpSource = sources[0];
 
-        measureSource = sources.Length >= 2
+        measureSource =
+            sources.Length >= 2
                 ? sources[1]
-                : gameObject.AddComponent<AudioSource>();
+                : gameObject.AddComponent<
+                    AudioSource
+                >();
+
+        eliminationSource =
+            sources.Length >= 3
+                ? sources[2]
+                : gameObject.AddComponent<
+                    AudioSource
+                >();
 
         ConfigureSource(jumpSource);
         ConfigureSource(measureSource);
+        ConfigureSource(eliminationSource);
 
         jumpClip = CreateJumpClip();
         measureClip = CreateMeasureClip();
+        eliminationClip =
+            CreateEliminationClip();
     }
 
     private void OnDestroy()
@@ -56,8 +79,113 @@ public sealed class GameAudio : MonoBehaviour
         {
             Destroy(measureClip);
         }
+
+        if (eliminationClip != null)
+        {
+            Destroy(eliminationClip);
+        }
     }
 
+    public void PlayElimination()
+    {
+        if (eliminationClip == null)
+        {
+            return;
+        }
+
+        eliminationSource.pitch =
+            UnityEngine.Random.Range(
+                0.9f,
+                1.1f
+            );
+
+        eliminationSource.PlayOneShot(
+            eliminationClip,
+            eliminationVolume
+        );
+    }
+
+    private AudioClip CreateEliminationClip()
+    {
+        int sampleCount = Mathf.Max(
+            1,
+            Mathf.RoundToInt(
+                SampleRate *
+                eliminationDuration
+            )
+        );
+
+        float[] samples =
+            new float[sampleCount];
+
+        System.Random random =
+            new System.Random(67890);
+
+        double phase = 0.0;
+
+        for (int i = 0;
+            i < sampleCount;
+            i++)
+        {
+            float progress =
+                (float)i / sampleCount;
+
+            float frequency =
+                Mathf.Lerp(
+                    420.0f,
+                    90.0f,
+                    progress
+                );
+
+            phase +=
+                2.0 *
+                Math.PI *
+                frequency /
+                SampleRate;
+
+            float square =
+                Mathf.Sin((float)phase) >= 0.0f
+                    ? 1.0f
+                    : -1.0f;
+
+            float noise =
+                (float)(
+                    random.NextDouble() *
+                    2.0 -
+                    1.0
+                );
+
+            float envelope =
+                Mathf.Pow(
+                    1.0f - progress,
+                    1.5f
+                );
+
+            float sample =
+                (
+                    square * 0.35f +
+                    noise * 0.65f
+                ) * envelope;
+
+            samples[i] =
+                Mathf.Round(
+                    sample * 6.0f
+                ) / 6.0f;
+        }
+
+        AudioClip clip =
+            AudioClip.Create(
+                "Elimination8Bit",
+                sampleCount,
+                1,
+                SampleRate,
+                false
+            );
+
+        clip.SetData(samples, 0);
+
+        return clip;
+    }
     public void PlayJump(float synchronization)
     {
         if (jumpClip == null)

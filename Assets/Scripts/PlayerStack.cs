@@ -79,11 +79,51 @@ public sealed class PlayerStack : MonoBehaviour
 
     public void RemovePlayer(string memberId)
     {
-        if (!balls.TryGetValue(
+        if (!TakePlayer(
             memberId,
             out PlayerBall ball))
         {
             return;
+        }
+
+        if (ball != null)
+        {
+            Destroy(ball.gameObject);
+        }
+
+        UpdateAfterRemoval();
+    }
+    public void EliminatePlayer(
+        string memberId)
+    {
+        if (!TakePlayer(
+            memberId,
+            out PlayerBall ball))
+        {
+            return;
+        }
+
+        if (ball != null)
+        {
+            ball.transform.SetParent(
+                null,
+                true
+            );
+
+            ball.PlayElimination();
+        }
+
+        UpdateAfterRemoval();
+    }
+    private bool TakePlayer(
+       string memberId,
+       out PlayerBall ball)
+    {
+        if (!balls.TryGetValue(
+            memberId,
+            out ball))
+        {
+            return false;
         }
 
         balls.Remove(memberId);
@@ -91,23 +131,36 @@ public sealed class PlayerStack : MonoBehaviour
 
         if (ball != null)
         {
-            ball.HitObstacle -= OnBallHitObstacle;
-            Destroy(ball.gameObject);
+            ball.HitObstacle -=
+                OnBallHitObstacle;
         }
 
-        Relayout();
-
-        if (order.Count == 0)
-        {
-            body.simulated = false;
-            body.linearVelocity = Vector2.zero;
-
-            transform.position = startPosition;
-            IsGrounded = false;
-        }
-
+        return true;
     }
 
+    private void UpdateAfterRemoval()
+    {
+        Relayout();
+
+        if (order.Count > 0)
+        {
+            return;
+        }
+
+        body.linearVelocity =
+            Vector2.zero;
+
+        body.angularVelocity =
+            0.0f;
+
+        body.simulated = false;
+
+        transform.position =
+            startPosition;
+
+        IsGrounded = false;
+    }
+    
     private void Awake()
     {
         startPosition = transform.position;
@@ -118,7 +171,7 @@ public sealed class PlayerStack : MonoBehaviour
         body.constraints =
             RigidbodyConstraints2D.FreezePositionX |
             RigidbodyConstraints2D.FreezeRotation;
-        
+
         body.collisionDetectionMode =
             CollisionDetectionMode2D.Continuous;
 
