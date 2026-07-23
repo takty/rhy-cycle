@@ -37,6 +37,9 @@ public sealed class RhyCycleGameManager : MonoBehaviour
         new HashSet<string>();
 
     private Coroutine jumpInputCoroutine;
+    
+    private bool jumpStarted;
+    private float appliedJumpSynchronization;
 
     private enum PlayerState
     {
@@ -370,32 +373,80 @@ public sealed class RhyCycleGameManager : MonoBehaviour
 
     private void RegisterJumpInput(string memberId)
     {
-        if (!playerStack.IsGrounded)
+        if (jumpInputCoroutine == null)
+        {
+            if (!playerStack.IsGrounded)
+            {
+                return;
+            }
+
+            jumpInputs.Clear();
+            jumpStarted = false;
+            appliedJumpSynchronization = 0.0f;
+        }
+
+        if (!jumpInputs.Add(memberId))
         {
             return;
         }
-
-        jumpInputs.Add(memberId);
 
         if (jumpInputCoroutine == null)
         {
             jumpInputCoroutine =
                 StartCoroutine(EvaluateJumpInputs());
         }
+
+        ApplyJumpInputs();
     }
 
     private IEnumerator EvaluateJumpInputs()
     {
         yield return new WaitForSecondsRealtime(
-            jumpInputWindow
-        );
+           jumpInputWindow
+       );
 
+        ApplyJumpInputs();
+
+        jumpInputs.Clear();
+        jumpInputCoroutine = null;
+        jumpStarted = false;
+        appliedJumpSynchronization = 0.0f;
+    }
+
+    private void ApplyJumpInputs()
+    {
         int aliveCount = CountAlivePlayers();
 
-        if (aliveCount > 0)
+        if (aliveCount <= 0)
         {
-            float synchronization =
-                (float)jumpInputs.Count / aliveCount;
+            return;
+        }
+
+        float synchronization =
+            (float)jumpInputs.Count /
+            aliveCount;
+
+        if (synchronization <
+            minimumSynchronization)
+        {
+            return;
+        }
+
+        if (!jumpStarted)
+        {
+            bool jumped =
+                playerStack.TryJump(
+                    synchronization
+                );
+
+            if (!jumped)
+            {
+                return;
+            }
+
+            jumpStarted = true;
+            appliedJumpSynchronization =
+                synchronization;
 
             Debug.Log(
                 $"Jump synchronization: " +
@@ -403,25 +454,28 @@ public sealed class RhyCycleGameManager : MonoBehaviour
                 $"({synchronization:P0})"
             );
 
-            if (synchronization >= minimumSynchronization)
+            if (gameAudio != null)
             {
-                bool jumped =
-                    playerStack.TryJump(
-                        synchronization
-                    );
-
-                if (jumped &&
-                    gameAudio != null)
-                {
-                    gameAudio.PlayJump(
-                        synchronization
-                    );
-                }
+                gameAudio.PlayJump(
+                    synchronization
+                );
             }
+
+            return;
         }
 
-        jumpInputs.Clear();
-        jumpInputCoroutine = null;
+        if (synchronization <=
+            appliedJumpSynchronization)
+        {
+            return;
+        }
+
+        if (playerStack.IncreaseJumpStrength(
+            synchronization))
+        {
+            appliedJumpSynchronization =
+                synchronization;
+        }
     }
 
     private int CountAlivePlayers()

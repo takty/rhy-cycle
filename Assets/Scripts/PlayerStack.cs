@@ -25,6 +25,7 @@ public sealed class PlayerStack : MonoBehaviour
     private float maximumJumpSpeed = 20.0f;
 
     private Rigidbody2D body;
+    private float appliedJumpSpeed;
     private Vector3 startPosition;
 
     public bool IsGrounded { get; private set; }
@@ -186,19 +187,65 @@ public sealed class PlayerStack : MonoBehaviour
             return false;
         }
 
-        float jumpSpeed = Mathf.Lerp(
-            minimumJumpSpeed,
-            maximumJumpSpeed,
-            Mathf.Clamp01(synchronization)
-        );
+        appliedJumpSpeed =
+            CalculateJumpSpeed(
+                synchronization
+            );
 
         body.linearVelocity = new Vector2(
             0.0f,
-            jumpSpeed
+            appliedJumpSpeed
         );
 
         IsGrounded = false;
         return true;
+    }
+
+    public bool IncreaseJumpStrength(
+        float synchronization)
+    {
+        if (IsGrounded ||
+            body.linearVelocity.y <= 0.0f)
+        {
+            return false;
+        }
+
+        float targetJumpSpeed =
+            CalculateJumpSpeed(
+                synchronization
+            );
+
+        float additionalSpeed =
+            targetJumpSpeed -
+            appliedJumpSpeed;
+
+        if (additionalSpeed <= 0.0f)
+        {
+            return false;
+        }
+
+        body.linearVelocity = new Vector2(
+            body.linearVelocity.x,
+            body.linearVelocity.y +
+            additionalSpeed
+        );
+
+        appliedJumpSpeed =
+            targetJumpSpeed;
+
+        return true;
+    }
+
+    private float CalculateJumpSpeed(
+        float synchronization)
+    {
+        return Mathf.Lerp(
+            minimumJumpSpeed,
+            maximumJumpSpeed,
+            Mathf.Clamp01(
+                synchronization
+            )
+        );
     }
 
     private void OnCollisionEnter2D(Collision2D collision)

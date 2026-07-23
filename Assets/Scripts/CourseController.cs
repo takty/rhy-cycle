@@ -16,13 +16,15 @@ public sealed class CourseController : MonoBehaviour
     public event Action<int> MeasureStarted;
     public event Action<int, int> BeatStarted;
 
+    public event Action<int> PhysicsMeasureStarted;
+
     private bool isRunning;
     private double startTime;
     private int currentMeasure = -1;
     private int currentBeat = -1;
+    private int currentPhysicsMeasure = -1;
 
     private Rigidbody2D body;
-    private float targetAngle;
 
     private double BeatDuration =>
         60.0 / bpm;
@@ -37,32 +39,12 @@ public sealed class CourseController : MonoBehaviour
             return;
         }
 
-        double elapsed =
-            AudioSettings.dspTime - startTime;
-
-        int beat =
-            (int)Math.Floor(
-                elapsed / BeatDuration
-            );
-
-        int measure =
-            beat / beatsPerMeasure;
-
-        int beatInMeasure =
-            beat % beatsPerMeasure;
-
-        double positionInMeasure =
-            (elapsed % MeasureDuration) / MeasureDuration;
-
-        float angle =
-            (float)(positionInMeasure * 360.0);
-
-        if (clockwise)
-        {
-            angle = -angle;
-        }
-
-        targetAngle = angle;
+        CalculateCourseState(
+            out int beat,
+            out int measure,
+            out int beatInMeasure,
+            out _
+        );
 
         while (currentMeasure < measure)
         {
@@ -90,7 +72,6 @@ public sealed class CourseController : MonoBehaviour
             );
         }
     }
-
     public void StartCourse()
     {
         startTime =
@@ -98,6 +79,7 @@ public sealed class CourseController : MonoBehaviour
 
         currentMeasure = -1;
         currentBeat = -1;
+        currentPhysicsMeasure = -1;
 
         isRunning = true;
     }
@@ -123,7 +105,56 @@ public sealed class CourseController : MonoBehaviour
             return;
         }
 
-        body.MoveRotation(targetAngle);
+        CalculateCourseState(
+            out _,
+            out int measure,
+            out _,
+            out float angle
+        );
+
+        body.MoveRotation(angle);
+
+        while (currentPhysicsMeasure < measure)
+        {
+            currentPhysicsMeasure++;
+
+            PhysicsMeasureStarted?.Invoke(
+                currentPhysicsMeasure
+            );
+        }
     }
 
+    private void CalculateCourseState(
+        out int beat,
+        out int measure,
+        out int beatInMeasure,
+        out float angle)
+    {
+        double elapsed = Math.Max(
+            0.0,
+            AudioSettings.dspTime - startTime
+        );
+
+        beat = (int)Math.Floor(
+            elapsed / BeatDuration
+        );
+
+        measure =
+            beat / beatsPerMeasure;
+
+        beatInMeasure =
+            beat % beatsPerMeasure;
+
+        double positionInMeasure =
+            (elapsed % MeasureDuration) /
+            MeasureDuration;
+
+        angle =
+            (float)(positionInMeasure * 360.0);
+
+        if (clockwise)
+        {
+            angle = -angle;
+        }
+    }
 }

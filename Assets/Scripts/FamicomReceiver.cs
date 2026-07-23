@@ -19,7 +19,6 @@ public sealed class FamicomReceiver : MonoBehaviour
             return;
         }
 
-        relay.EventReceived += OnEventReceived;
         relay.RoomClosed += OnRoomClosed;
         relay.Error += OnError;
 
@@ -54,7 +53,6 @@ public sealed class FamicomReceiver : MonoBehaviour
     {
         if (relay != null)
         {
-            relay.EventReceived -= OnEventReceived;
             relay.RoomClosed -= OnRoomClosed;
             relay.Error -= OnError;
         }
@@ -62,31 +60,6 @@ public sealed class FamicomReceiver : MonoBehaviour
         if (qrCodeTexture != null)
         {
             Destroy(qrCodeTexture);
-        }
-    }
-
-    private void OnEventReceived(RelayEvent<FamicomControllerState> relayEvent)
-    {
-        Debug.Log("CC received: " + relayEvent.Type);
-
-        if (relayEvent is not TickEvent<FamicomControllerState> tick)
-        {
-            return;
-        }
-
-        foreach (QueuedMessage<FamicomControllerState> message in tick.Messages)
-        {
-            FamicomControllerState state = message.Payload;
-
-            Debug.Log(
-                "Controller state: " +
-                $"up={state.Up}, " +
-                $"down={state.Down}, " +
-                $"left={state.Left}, " +
-                $"right={state.Right}, " +
-                $"a={state.A}, " +
-                $"b={state.B}"
-            );
         }
     }
 

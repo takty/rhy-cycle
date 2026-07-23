@@ -22,7 +22,8 @@ public sealed class CourseObstacleLayout : MonoBehaviour
     [SerializeField]
     private float phaseOffset = 45.0f;
 
-    private readonly List<GameObject> obstacles = new();
+    private readonly Dictionary<int, GameObject> obstacles =
+        new Dictionary<int, GameObject>();
 
     private readonly float[][] patterns =
     {
@@ -56,7 +57,8 @@ public sealed class CourseObstacleLayout : MonoBehaviour
     {
         if (courseController != null)
         {
-            courseController.MeasureStarted += OnMeasureStarted;
+            courseController.PhysicsMeasureStarted +=
+                OnMeasureStarted;
         }
     }
 
@@ -64,7 +66,8 @@ public sealed class CourseObstacleLayout : MonoBehaviour
     {
         if (courseController != null)
         {
-            courseController.MeasureStarted -= OnMeasureStarted;
+            courseController.PhysicsMeasureStarted -=
+                OnMeasureStarted;
         }
     }
 
@@ -122,15 +125,59 @@ public sealed class CourseObstacleLayout : MonoBehaviour
 
     public void ApplyPattern(float[] angles)
     {
-        ClearObstacles();
+        HashSet<int> requiredKeys =
+            new HashSet<int>();
 
-        foreach (float angle in angles)
+        foreach (float patternAngle in angles)
         {
-            CreateObstacle(angle + phaseOffset);
+            float angle =
+                patternAngle + phaseOffset;
+
+            int key = GetAngleKey(angle);
+
+            if (!requiredKeys.Add(key))
+            {
+                continue;
+            }
+
+            if (!obstacles.ContainsKey(key))
+            {
+                obstacles.Add(
+                    key,
+                    CreateObstacle(angle)
+                );
+            }
+        }
+
+        List<int> obsoleteKeys =
+            new List<int>();
+
+        foreach (
+            KeyValuePair<int, GameObject> pair
+            in obstacles)
+        {
+            if (!requiredKeys.Contains(pair.Key))
+            {
+                obsoleteKeys.Add(pair.Key);
+            }
+        }
+
+        foreach (int key in obsoleteKeys)
+        {
+            GameObject obstacle =
+                obstacles[key];
+
+            obstacles.Remove(key);
+
+            if (obstacle != null)
+            {
+                obstacle.SetActive(false);
+                Destroy(obstacle);
+            }
         }
     }
 
-    private void CreateObstacle(float angle)
+    private GameObject CreateObstacle(float angle)
     {
         GameObject obstacle =
             Instantiate(obstaclePrefab, transform);
@@ -141,37 +188,41 @@ public sealed class CourseObstacleLayout : MonoBehaviour
             donutCourse.InnerRadius -
             obstacleLength * 0.5f;
 
-        float radians = angle * Mathf.Deg2Rad;
+        float radians =
+            angle * Mathf.Deg2Rad;
 
-        obstacle.transform.localPosition = new Vector3(
-            Mathf.Cos(radians) * radius,
-            Mathf.Sin(radians) * radius,
-            0.0f
-        );
+        obstacle.transform.localPosition =
+            new Vector3(
+                Mathf.Cos(radians) * radius,
+                Mathf.Sin(radians) * radius,
+                0.0f
+            );
 
         obstacle.transform.localRotation =
-            Quaternion.Euler(0.0f, 0.0f, angle);
+            Quaternion.Euler(
+                0.0f,
+                0.0f,
+                angle
+            );
 
-        obstacle.transform.localScale = new Vector3(
-            obstacleLength,
-            obstacleWidth,
-            1.0f
-        );
+        obstacle.transform.localScale =
+            new Vector3(
+                obstacleLength,
+                obstacleWidth,
+                1.0f
+            );
 
-        obstacles.Add(obstacle);
+        return obstacle;
     }
 
-    private void ClearObstacles()
+    private static int GetAngleKey(float angle)
     {
-        foreach (GameObject obstacle in obstacles)
-        {
-            if (obstacle != null)
-            {
-                obstacle.SetActive(false);
-                Destroy(obstacle);
-            }
-        }
+        float normalized =
+            Mathf.Repeat(angle, 360.0f);
 
-        obstacles.Clear();
+        return Mathf.RoundToInt(
+            normalized * 1000.0f
+        );
     }
+
 }
