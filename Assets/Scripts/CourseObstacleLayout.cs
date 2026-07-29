@@ -4,6 +4,8 @@ using UnityEngine;
 
 public sealed class CourseObstacleLayout : MonoBehaviour
 {
+    private const float PatternStartAngle = 270.0f;
+
     [SerializeField]
     private CourseController courseController;
 
@@ -17,10 +19,7 @@ public sealed class CourseObstacleLayout : MonoBehaviour
     private float obstacleLength = 1.2f;
 
     [SerializeField]
-    private float obstacleWidth = 0.175f;
-
-    [SerializeField]
-    private float phaseOffset = 45.0f;
+    private float obstacleWidth = 0.1f;
 
     private readonly Dictionary<int, GameObject> obstacles =
         new Dictionary<int, GameObject>();
@@ -42,11 +41,11 @@ public sealed class CourseObstacleLayout : MonoBehaviour
             0.0f, 180.0f,
         },
 
-        //new float[]
-        //{
-        //    0.0f, 45.0f, 90.0f, 135.0f,
-        //    180.0f, 225.0f, 270.0f, 315.0f,
-        //},
+        new float[]
+        {
+           0.0f, 90.0f, 140.0f,
+           180.0f, 270.0f,
+        },
     };
 
     private int currentPatternIndex = -1;
@@ -131,7 +130,7 @@ public sealed class CourseObstacleLayout : MonoBehaviour
         foreach (float patternAngle in angles)
         {
             float angle =
-                patternAngle + phaseOffset;
+               patternAngle + PatternStartAngle;
 
             int key = GetAngleKey(angle);
 
