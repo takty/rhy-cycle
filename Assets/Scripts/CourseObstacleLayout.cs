@@ -33,6 +33,11 @@ public sealed class CourseObstacleLayout : MonoBehaviour
 
         new float[]
         {
+            0.0f, 180.0f, 270.0f,
+        },
+
+        new float[]
+        {
            0.0f, 120.0f, 240.0f,
         },
 
@@ -43,8 +48,8 @@ public sealed class CourseObstacleLayout : MonoBehaviour
 
         new float[]
         {
-           0.0f, 90.0f, 140.0f,
-           180.0f, 270.0f,
+           0.0f, 72.0f, 144.0f,
+           216.0f, 288.0f,
         },
     };
 
